@@ -1,5 +1,5 @@
-const { createApp, ref, defineComponent, computed } = Vue;
-const { createRouter, createWebHashHistory } = VueRouter;
+const { createApp, ref, defineComponent, computed, watch } = Vue;
+const { createRouter, createWebHashHistory, useRoute } = VueRouter;
 
 const units = [
     { code: 'ICT10001', name: 'Problem Solving with ICT', credits: 12.5, type: 'Core' },
@@ -16,7 +16,18 @@ const units = [
 const Home = defineComponent({
     setup() {
         const unitsList = ref(units);
-        return { unitsList };
+        const unit = ref(null);
+        const route = useRoute();
+
+        const findUnit = (id) => {
+            return unitsList.value.find(u => u.code === id);
+        };
+
+        watch(route, () => {
+            unit.value = findUnit(route.params.id);
+        }, { immediate: true });
+
+        return { unit, unitsList, route };
     },
     template: `
         <div>
@@ -37,29 +48,11 @@ const Home = defineComponent({
                         <td>{{ unit.name }}</td>
                         <td>{{ unit.credits }}</td>
                         <td>{{ unit.type }}</td>
-                        <td><router-link :to="'/unit/' + unit.code">View Details</router-link></td>
+                        <td><router-link :to="'/unit/' + unit.code" >View Details</router-link></td>
                     </tr>
                 </tbody>
             </table>
         </div>
-    `
-});
-
-// UnitDetail Component
-const UnitDetail = defineComponent({
-    setup() {
-        const unit = ref(null);
-        const route = VueRouter.useRoute();
-
-        const filteredUnit = computed(() => {
-            return units.find(u => u.code === route.params.id);
-        });
-
-        unit.value = filteredUnit.value;
-
-        return { unit };
-    },
-    template: `
         <div v-if="unit">
             <h1>{{ unit.name }}</h1>
             <p><strong>Unit Code:</strong> {{ unit.code }}</p>
@@ -74,7 +67,7 @@ const UnitDetail = defineComponent({
 // Creating the VueRouter
 const routes = [
     { path: '/', component: Home },
-    { path: '/unit/:id', component: UnitDetail }
+    { path: '/unit/:id', component: Home }
 ];
 
 const router = createRouter({

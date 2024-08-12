@@ -4,11 +4,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: cos30043
+      POSTGRES_DB: swe30003
     ports:
       - "5432:5432"
     volumes:
-      - cos30043:/var/lib/postgresql/data
+      - swe30003:/var/lib/postgresql/data
     networks:
       - app-network
 

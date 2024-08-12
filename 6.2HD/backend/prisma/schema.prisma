@@ -41,3 +41,13 @@ model Category {
 
   @@unique([name, userId])
 }
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

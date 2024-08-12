@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '../stores/auth';
 
 const isMenuOpen = ref(false);
 
@@ -9,6 +11,14 @@ function toggleMenu() {
 
 function closeMenu() {
     isMenuOpen.value = false;
+}
+
+const userStore = useUserStore();
+const router = useRouter();
+
+function handleLogout() {
+    userStore.logout();
+    router.push('/login');
 }
 
 onMounted(() => {
@@ -25,13 +35,13 @@ onMounted(() => {
     <header>
         <nav class="bg-white border-gray-200 px-4 lg:px-6 py-2.5">
             <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl">
-                <RouterLink to="/" class="flex items-center">
+                <div class="flex items-center">
                     <img src="../assets/logo.png" class="mr-3 h-6 sm:h-9" alt="Flowbite Logo" />
                     <span class="self-center text-xl font-semibold whitespace-nowrap">Vue Wallet</span>
-                </RouterLink>
+                </div>
                 <div class="flex items-center lg:order-2">
-                    <a href="#" class="text-gray-800 hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">Log in</a>
-                    <a href="#" class="text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">Get started</a>
+                    <button @click="handleLogout" class="text-gray-800 hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">Log out</button>
+                    <a href="#" class="text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">Hi {{userStore.user.username}}</a>
                     <button @click="toggleMenu" type="button" class="inline-flex items-center p-2 ml-1 text-sm text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200" aria-controls="mobile-menu-2" aria-expanded="false">
                         <span class="sr-only">Open main menu</span>
                         <svg v-if="!isMenuOpen" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -76,32 +86,22 @@ onMounted(() => {
                         </li>
                         <li>
                             <RouterLink
-                                to="/features"
+                                to="/category"
                                 @click.native="closeMenu"
                                 class="block py-2 pr-4 pl-3 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-primary-700 lg:p-0"
                                 exact-active-class="text-white bg-primary-600 lg:bg-transparent lg:text-primary-700"
                             >
-                                Features
+                                Category
                             </RouterLink>
                         </li>
                         <li>
                             <RouterLink
-                                to="/team"
+                                to="/rating"
                                 @click.native="closeMenu"
                                 class="block py-2 pr-4 pl-3 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-primary-700 lg:p-0"
                                 exact-active-class="text-white bg-primary-600 lg:bg-transparent lg:text-primary-700"
                             >
-                                Team
-                            </RouterLink>
-                        </li>
-                        <li>
-                            <RouterLink
-                                to="/contact"
-                                @click.native="closeMenu"
-                                class="block py-2 pr-4 pl-3 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-primary-700 lg:p-0"
-                                exact-active-class="text-white bg-primary-600 lg:bg-transparent lg:text-primary-700"
-                            >
-                                Contact
+                                Rating
                             </RouterLink>
                         </li>
                     </ul>

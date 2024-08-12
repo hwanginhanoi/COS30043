@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ApexOptions } from 'apexcharts'
+import { ref, onMounted, watch } from 'vue';
+import { ApexOptions } from 'apexcharts';
+import axios from 'axios';
+import { useUserStore } from "../stores/auth.ts";
 
-// Define chart options
+// Store
+const userStore = useUserStore();
+
+// Data and options
+const chartSeries = ref<number[]>([]);
+const chartLabels = ref<string[]>([]);
 const chartOptions = ref<ApexOptions>({
-    series: [{
-        name: 'Traffic Sources',
-        data: [35.1, 23.5, 2.4, 5.4]
-    }],
-    labels: ["Direct", "Sponsor", "Affiliate", "Email marketing"],
+    series: chartSeries.value,
+    labels: chartLabels.value,
     colors: ["#1C64F2", "#16BDCA", "#FDBA8C", "#E74694"],
     chart: {
         height: "100%",
@@ -38,11 +42,11 @@ const chartOptions = ref<ApexOptions>({
                     total: {
                         showAlways: true,
                         show: true,
-                        label: "Unique visitors",
+                        label: "Total Expenses",
                         fontFamily: "Inter, sans-serif",
                         formatter: (w) => {
-                            const sum = w.globals.seriesTotals.reduce((a : number, b : number) => a + b, 0)
-                            return '$' + sum + 'k'
+                            const sum = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+                            return `$${sum.toFixed(2)}`
                         },
                     },
                     value: {
@@ -51,7 +55,7 @@ const chartOptions = ref<ApexOptions>({
                         fontWeight: "bold",
                         fontSize: "30px",
                         offsetY: -20,
-                        formatter: (value) => value + "k",
+                        formatter: (value) => `$${parseInt(value).toFixed(2)}`,
                     },
                 },
                 size: "70",
@@ -73,14 +77,14 @@ const chartOptions = ref<ApexOptions>({
     yaxis: {
         labels: {
             formatter: function (value) {
-                return value + "k"
+                return `$${value.toFixed(2)}`
             },
         },
     },
     xaxis: {
         labels: {
             formatter: function (value) {
-                return value  + "k"
+                return `$${parseInt(value).toFixed(2)}`
             },
         },
         axisTicks: {
@@ -90,42 +94,35 @@ const chartOptions = ref<ApexOptions>({
             show: false,
         },
     },
+});
 
-})
+// Watch for changes in series and labels to update chartOptions
+watch([chartSeries, chartLabels], () => {
+    chartOptions.value = {
+        ...chartOptions.value,
+        series: chartSeries.value,
+        labels: chartLabels.value
+    };
+}, { immediate: true });
 
-const chartSeries = ref([35.1, 23.5, 2.4, 5.4])
+// Fetch data
+const fetchExpensesByCategory = async () => {
+    try {
+        const response = await axios.get('http://localhost:3000/index/expenses-by-category', {
+            params: { userId: userStore.user.id }
+        });
 
-const updateChart = (checkedValues: string[]) => {
-    switch (true) {
-        case checkedValues.includes('desktop'):
-            chartSeries.value = [15.1, 22.5, 4.4, 8.4]
-            break
-        case checkedValues.includes('tablet'):
-            chartSeries.value = [25.1, 26.5, 1.4, 3.4]
-            break
-        case checkedValues.includes('mobile'):
-            chartSeries.value = [45.1, 27.5, 8.4, 2.4]
-            break
-        default:
-            chartSeries.value = [35.1, 23.5, 2.4, 5.4]
+        const data = response.data;
+        chartSeries.value = data.map((item: { amount: number }) => item.amount);
+        chartLabels.value = data.map((item: { category: string }) => item.category);
+    } catch (error) {
+        console.error('Error fetching expenses by category:', error);
     }
-}
+};
 
-const handleCheckboxChange = (event: Event) => {
-    const target = event.target as HTMLElement;
-    if (target instanceof HTMLInputElement) {
-        const checkedValues = Array.from(document.querySelectorAll('#devices input[type="checkbox"]:checked')).map((checkbox) => (checkbox as HTMLInputElement).value);
-        updateChart(checkedValues);
-    }
-}
-
-// Watch for checkbox changes
 onMounted(() => {
-    const checkboxes = document.querySelectorAll('#devices input[type="checkbox"]')
-    checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener('change', handleCheckboxChange)
-    })
-})
+    fetchExpensesByCategory();
+});
 </script>
 
 <template>
@@ -133,7 +130,7 @@ onMounted(() => {
         <div class="flex justify-between">
             <div>
                 <h5 class="leading-none text-3xl font-bold text-gray-900 dark:text-white pb-2">Categories</h5>
-                <p class="text-base font-normal text-gray-500 dark:text-gray-400">Users this week</p>
+                <p class="text-base font-normal text-gray-500 dark:text-gray-400">Expenses last week</p>
             </div>
         </div>
         <div class="py-6">
@@ -143,5 +140,4 @@ onMounted(() => {
 </template>
 
 <style scoped>
-
 </style>

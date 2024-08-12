@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import {ref, computed} from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
 import DatePicker from "./DatePicker.vue";
+import { useUserStore } from "../stores/auth.ts";
+
+interface Category {
+    id: number;
+    name: string;
+}
+
+const userStore = useUserStore();
 
 const visible = ref(false);
 
@@ -10,14 +19,19 @@ const openDrawer = () => {
 
 const closeDrawer = () => {
     visible.value = false;
+    isIncome.value = null;
+    emit('drawerClosed');
+    resetForm()
 };
+
+const emit = defineEmits(['drawerClosed']);
 
 defineExpose({
     openDrawer,
     closeDrawer
 });
 
-const isIncome = ref<boolean | null>(null); // Initial state is null to represent gray button
+const isIncome = ref<boolean | null>(null);
 
 const toggleType = () => {
     if (isIncome.value === null) {
@@ -37,8 +51,66 @@ const buttonClass = computed(() => {
     return isIncome.value ? 'bg-green-500 text-white' : 'bg-red-500 text-white';
 });
 
+const categories = ref<Category[]>([]);
 
+const fetchCategories = async () => {
+    try {
+        const response = await axios.get('http://localhost:3000/category', {
+            params: { userId: userStore.user.id }
+        });
+        categories.value = response.data.categories;
+    } catch (error) {
+        console.error('Failed to fetch categories:', error);
+    }
+};
 
+onMounted(() => {
+    fetchCategories();
+});
+
+const date = ref<string | null>(null);
+const amount = ref<number | null>(null);
+const payee = ref<string>('');
+const categoryId = ref<number | null>(null);
+
+const resetForm = () => {
+    date.value = null;
+    amount.value = null;
+    payee.value = '';
+    categoryId.value = null;
+    isIncome.value = null;
+};
+
+const createTransaction = async () => {
+    try {
+        const dateHTML = document.getElementById('datepicker-custom') as HTMLInputElement;
+        if (dateHTML) {
+            date.value = dateHTML.value;
+            console.log('Date Value:', dateHTML.value);
+        }
+
+        if (!date.value || !amount.value || !payee.value || !categoryId.value || isIncome.value === null) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        const transactionAmount = isIncome.value ? amount.value : -amount.value;
+
+        await axios.post('http://localhost:3000/transactions', {
+            date: date.value,
+            amount: transactionAmount,
+            payee: payee.value,
+            categoryId: categoryId.value,
+            userId: userStore.user.id,
+        });
+
+        alert('Transaction created successfully.');
+        closeDrawer();
+    } catch (error) {
+        console.error('Failed to create transaction:', error);
+        alert('Failed to create transaction.');
+    }
+};
 </script>
 
 <template>
@@ -50,7 +122,7 @@ const buttonClass = computed(() => {
     <div
         id="drawer-form"
         :class="{ 'translate-x-0': visible }"
-        class="fixed top-0 left-0 z-40 h-screen p-4 overflow-y-auto transition-transform -translate-x-full bg-white  w-full sm:w-80 md:w-96 lg:w-[400px] xl:w-[500px]"
+        class="fixed top-0 left-0 z-40 h-screen p-4 overflow-y-auto transition-transform -translate-x-full bg-white w-full sm:w-80 md:w-96 lg:w-[400px] xl:w-[500px]"
         aria-labelledby="drawer-form-label"
     >
         <h5 id="drawer-label"
@@ -72,52 +144,43 @@ const buttonClass = computed(() => {
         <h6 class="mb-4 text-gray-500 text-xs">
             Add a new transaction
         </h6>
-        <form class="mb-6">
+        <form @submit.prevent="createTransaction" class="mb-6">
             <div class="relative mb-6">
                 <DatePicker></DatePicker>
             </div>
             <div class="mb-6">
-                <label for="title" class="block mb-2 text-sm font-medium text-gray-900">Category</label>
+                <label for="category" class="block mb-2 text-sm font-medium text-gray-900">Category</label>
                 <div class="relative">
-                    <select id="countries" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
-                        <option selected>Choose a category</option>
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="FR">France</option>
-                        <option value="DE">Germany</option>
+                    <select id="category" v-model="categoryId" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500" :disabled="!categories.length">
+                        <option v-if="!categories.length" selected disabled>Create a category first</option>
+                        <option v-else v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
                     </select>
                 </div>
             </div>
             <div class="mb-2">
                 <label for="amount" class="block mb-2 text-sm font-medium text-gray-900">Amount</label>
                 <div class="relative">
-                    <input type="text" id="amount"
+                    <input type="number" id="amount" v-model="amount"
                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pl-10"
+                           placeholder="Type amount"
                            required />
-                    <button @click="toggleType" :class="buttonClass" class="absolute left-2 top-0 mt-2 px-2 rounded-md w-6 flex items-center justify-center">
+                    <button @click="toggleType" type="button" :class="buttonClass" class="absolute left-2 top-0 mt-2 px-2 rounded-md w-6 flex items-center justify-center">
                         {{ buttonText }}
                     </button>
                 </div>
             </div>
-            <h6 class="mb-4 text-gray-500 text-xs">
-                Add a new transaction
-            </h6>
             <div class="mb-6">
-                <label for="description" class="block mb-2 text-sm font-medium text-gray-900">Description</label>
-                <textarea id="description" rows="4"
-                          class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Write event description..."></textarea>
+                <label for="payee" class="block mb-2 text-sm font-medium text-gray-900">Payee</label>
+                <div class="relative">
+                    <input type="text" id="payee" v-model="payee"
+                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                           placeholder="Type payee"
+                           required />
+                </div>
             </div>
             <button type="submit"
-                    class="text-white justify-center flex items-center bg-blue-700 hover:bg-blue-800 w-full focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2">
-                <svg class="w-3.5 h-3.5 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                     fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                        d="M18 2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2ZM2 18V7h6.7l.4-.409A4.309 4.309 0 0 1 15.753 7H18v11H2Z"/>
-                    <path
-                        d="M8.139 10.411 5.289 13.3A1 1 0 0 0 5 14v2a1 1 0 0 0 1 1h2a1 1 0 0 0 .7-.288l2.886-2.851-3.447-3.45ZM14 8a2.463 2.463 0 0 0-3.484 0l-.971.983 3.468 3.468.987-.971A2.463 2.463 0 0 0 14 8Z"/>
-                </svg>
-                Create event
+                    class="text-white justify-center flex items-center bg-primary-600 hover:bg-primary-800 w-full focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2">
+                Create transaction
             </button>
         </form>
     </div>

@@ -4,23 +4,18 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-/* GET users listing. */
-router.get('/', async (req, res) => {
-  try {
-    const users = await prisma.user.findMany();
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-router.post('/', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
-  console.log(username, password);
-
   try {
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ message: 'User already exists' });
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
@@ -34,5 +29,23 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 module.exports = router;

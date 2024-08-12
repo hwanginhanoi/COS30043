@@ -1,63 +1,86 @@
-const { createApp, ref, computed } = Vue;
+const { createApp, ref, computed, onMounted } = Vue;
 
 const app = createApp({
+    components: {
+        paginate: VuejsPaginateNext,
+    },
+
     setup() {
-        const studMarks = ref([
-            {"name":"Amy", "mark":90},
-            {"name":"Bill", "mark":80},
-            {"name":"Casey", "mark":78},
-            {"name":"David", "mark":84},
-            {"name":"Emma", "mark":92},
-            {"name":"Frank", "mark":75},
-            {"name":"Grace", "mark":88},
-            {"name":"Hannah", "mark":79},
-            {"name":"Ivy", "mark":85},
-            {"name":"Jack", "mark":91},
-            {"name":"Kelly", "mark":82},
-            {"name":"Leo", "mark":77},
-            {"name":"Mia", "mark":89},
-            {"name":"Nathan", "mark":76},
-            {"name":"Olivia", "mark":94},
-            {"name":"Paul", "mark":81},
-            {"name":"Quinn", "mark":87},
-            {"name":"Rachel", "mark":74},
-            {"name":"Sam", "mark":86},
-            {"name":"Tina", "mark":83},
-            {"name":"Uma", "mark":90},
-            {"name":"Victor", "mark":79},
-            {"name":"Wendy", "mark":92},
-            {"name":"Xander", "mark":88},
-            {"name":"Yara", "mark":91},
-            {"name":"Zack", "mark":84}
-        ]);
+        const perPage = ref(5);
         const currentPage = ref(1);
-        const perPage = ref(3);
+        const units = ref([]);
+        const error = ref("");
 
-        const totalPages = computed(() => {
-            return Math.ceil(studMarks.value.length / perPage.value);
+        const getItems = computed(() => {
+            let current = currentPage.value * perPage.value;
+            let start = current - perPage.value;
+            return units.value.slice(start, current);
         });
 
-        const paginatedData = computed(() => {
-            const start = (currentPage.value - 1) * perPage.value;
-            const end = start + perPage.value;
-            return studMarks.value.slice(start, end);
+        const getPageCount = computed(() => {
+            return Math.ceil(units.value.length / perPage.value);
         });
 
-        const changePage = (page) => {
-            if (page >= 1 && page <= totalPages.value) {
-                currentPage.value = page;
-            }
+        const clickCallback = (pageNum) => {
+            currentPage.value = Number(pageNum);
         };
+
+        onMounted(() => {
+            fetch("units.json")
+                .then((response) => response.json())
+                .then((data) => {
+                    units.value = data;
+                })
+                .catch((err) => {
+                    error.value = err.toString();
+                });
+        });
 
         return {
-            studMarks,
-            currentPage,
             perPage,
-            totalPages,
-            paginatedData,
-            changePage
+            currentPage,
+            units,
+            error,
+            getItems,
+            getPageCount,
+            clickCallback,
         };
-    }
+    },
+
+    template: `
+    <div class="container mt-5">
+        <h1>Units</h1>
+        <table class="table table-hover table-bordered">
+            {{ error }}
+            <thead>
+                <tr>
+                    <th id="code" scope="col">Code</th>
+                    <th id="desc" scope="col">Description</th>
+                    <th id="cp" scope="col">Credit Points</th>
+                    <th id="type" scope="col">Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="unit in getItems" :key="unit.code">
+                    <td header="code">{{ unit.code }}</td>
+                    <td header="desc">{{ unit.desc }}</td>
+                    <td header="cp">{{ unit.cp }}</td>
+                    <td header="type">{{ unit.type }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <paginate 
+            :page-count="getPageCount" 
+            :page-range="6" 
+            :margin-pages="5" 
+            :click-handler="clickCallback" 
+            :prev-text="'Prev'" 
+            :next-text="'Next'" 
+            :container-class="'pagination'" 
+            :page-class="'page-item'">
+        </paginate>
+    </div>
+    `,
 });
 
-app.mount('#app');
+app.mount("#app");

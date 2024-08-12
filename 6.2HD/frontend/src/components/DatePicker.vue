@@ -7,7 +7,7 @@ import type {InstanceOptions} from 'flowbite';
 const datepickerEl = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
-    const $datepickerEl: HTMLInputElement = datepickerEl.value as HTMLInputElement;
+    const $datepickerEl: HTMLInputElement = document.getElementById('datepicker-custom') as HTMLInputElement;
 
     const options: DatepickerOptions = {
         defaultDatepickerId: null,
@@ -36,11 +36,20 @@ onMounted(() => {
         options,
         instanceOptions
     );
-    datepicker.getDate();
-    datepicker.setDate('05/31/2024');
+
+    const observer = new MutationObserver(() => {
+        const dropdownEl = document.querySelector('.datepicker-dropdown');
+        if (dropdownEl) {
+            dropdownEl.setAttribute('style', 'z-index: 1000 !important');
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+
     datepicker.hide();
     datepicker.getDatepickerInstance();
-});
+ });
 </script>
 
 <template>

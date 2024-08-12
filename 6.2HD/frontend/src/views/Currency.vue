@@ -70,7 +70,6 @@ async function fetchCurrency(): Promise<void> {
     }>('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
     currencies.value = response.data.eur;
     effective_date.value = response.data.date;
-    console.log(currencies.value);
 }
 
 function changeSort(key: string) {
@@ -119,11 +118,11 @@ onMounted(fetchCurrency);
                                 Source Currency
                                 <span v-if="sortKey === 'currency'"
                                       :class="{'text-green-500 ml-1': sortAsc, 'text-red-500 ml-1': !sortAsc}">
-            {{ sortAsc ? '▲' : '▼' }}
-        </span>
+                                    {{ sortAsc ? '▲' : '▼' }}
+                                </span>
                                 <span v-else class="ml-1">
-            ▲▼
-        </span>
+                                    ▲▼
+                                </span>
                             </th>
                             <th scope="col" class="px-4 py-3"></th>
                             <th scope="col" class="px-4 py-3">Target Currency</th>
@@ -195,20 +194,19 @@ onMounted(fetchCurrency);
                         <!-- Displayed pages -->
                         <template v-for="pageNumber in displayedPages" :key="pageNumber">
                             <li v-if="pageNumber === '...'" :key="pageNumber">
-                                <a href="#"
-                                   class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">{{
+                                <a class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">{{
                                         pageNumber
                                     }}</a>
                             </li>
                             <li v-else>
-                                <a href="#" @click.prevent="gotoPage(Number(pageNumber))"
+                                <a @click.prevent="gotoPage(Number(pageNumber))"
                                    :class="['flex', 'items-center', 'justify-center', 'text-sm', 'py-2', 'px-3', 'leading-tight', 'text-gray-500', 'bg-white', 'border', 'border-gray-300', currentPage === pageNumber ? 'text-primary-600 bg-primary-50 border-primary-300 hover:bg-primary-100 hover:text-primary-700' : 'hover:bg-gray-100 hover:text-gray-700']">{{
                                         pageNumber
                                     }}</a>
                             </li>
                         </template>
                         <li>
-                            <a href="#" @click.prevent="gotoPage(currentPage + 1)"
+                            <a @click.prevent="gotoPage(currentPage + 1)"
                                :class="['flex', 'items-center', 'justify-center', 'h-full', 'py-1.5', 'px-3', 'leading-tight', 'text-gray-500', 'bg-white', 'rounded-r-lg', 'border', 'border-gray-300', currentPage === totalPages ? 'pointer-events-none' : '', 'hover:bg-gray-100', 'hover:text-gray-700']">
                                 <span class="sr-only">Next</span>
                                 <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
